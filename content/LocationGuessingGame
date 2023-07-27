@@ -1,0 +1,45 @@
+from math import radians, cos, sin, asin, sqrt, degrees, pi, atan2
+import geopandas as gpd
+def haversine(lat1, lon1, lat2, lon2):
+  lat1 = radians(lat1)
+  lon1 = radians(lon1)
+  lat2 = radians(lat2)
+  lon2 = radians(lon2)
+
+  d_lat = lat2 - lat1
+  d_lon = lon2 - lon1
+  d = sin(d_lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(d_lon * 0.5) ** 2
+  return 12742.0176 * asin(sqrt(d)) # distance in kilometers
+
+places = gpd.read_file("tl21_places.gpkg")
+
+class Game:
+  def __init__(self):
+    self.name = ''
+    self.locations = places.sample(10)
+    self.distances = []
+    self.game()
+
+  def game(self):
+    print("Welcome to the location guessing game!\nYou will be shown the names of ten different populated places in the United States, and your job is to guess the latitude and longitude of each place.\nThe closer you are, the better your score.  Your score as the game progresses is the average distance of your guesses to the correct locations.  Lower scores win!")
+    name = input("Please enter your name: ")
+    print("Welcome, {}! Let's get started.".format(name))
+    for index, location in self.locations.iterrows():
+      print("Location {} of 10: {}, {}".format(self.turns() + 1, location["NAMELSAD"], location["STUSPS"]))
+      lat = float(input("Guess the latitude: "))
+      lon = float(input("Guess the longitude: "))
+      dist = round(haversine(lat, lon, location["geometry"].y, location["geometry"].x),2)
+      self.distances.append(dist)
+      print("Distance from Guessed Location to Correct Location: {} km".format(dist))
+      print("Game Score: {}".format(self.score()))
+      print("You have taken {} of 10 turns.".format(self.turns()))
+    else:
+      print("Game over! Your final score is: {}".format(self.score()))
+
+  def score(self):
+    return round(sum((self.distances))/len(self.distances))
+
+  def turns(self):
+    return len(self.distances)
+
+game = Game()
